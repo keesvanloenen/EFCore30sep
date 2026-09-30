@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MyWebShop.ConsoleApp.DAL;
 using MyWebShop.ConsoleApp.Models;
 
@@ -8,13 +9,22 @@ internal class Program
 {
     static void Main(string[] args)
     {
+        var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
+        var config = builder.Build();
+
         var options = new DbContextOptionsBuilder<WebShopDbContext>()
-            .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=MyWebShop;ConnectRetryCount=0")
+            .UseSqlServer(config.GetConnectionString("DefaultConn"))
             .Options;
 
         InitalizeDb(options);
         DataSeed(options);
         ShowCustomers(options);
+    }
+    private static void InitalizeDb(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+        context.Database.EnsureDeleted();       // quick prototyping
+        context.Database.EnsureCreated();       // quick prototyping
     }
 
     private static void DataSeed(DbContextOptions<WebShopDbContext> options)
@@ -28,12 +38,6 @@ internal class Program
         context.SaveChanges();
     }
 
-    private static void InitalizeDb(DbContextOptions<WebShopDbContext> options)
-    {
-        using var context = new WebShopDbContext(options);
-        context.Database.EnsureDeleted();       // quick prototyping
-        context.Database.EnsureCreated();       // quick prototyping
-    }
 
     private static void ShowCustomers(DbContextOptions<WebShopDbContext> options)
     {
@@ -45,6 +49,5 @@ internal class Program
         {
             Console.WriteLine($"{customer.Id} {customer.Name}");
         }
-        
     }
 }

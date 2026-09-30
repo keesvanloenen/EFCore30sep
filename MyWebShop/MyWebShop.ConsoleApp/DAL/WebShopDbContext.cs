@@ -12,6 +12,7 @@ public class WebShopDbContext : DbContext
     //    builder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=MyWebShop;ConnectRetryCount=0");
     //}
 
+    // Inject the context options in the constructor              👇
     public WebShopDbContext(DbContextOptions<WebShopDbContext> options) : base(options)
     {
     }
