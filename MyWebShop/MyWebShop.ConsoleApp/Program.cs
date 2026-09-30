@@ -43,7 +43,7 @@ internal class Program
     {
         using var context = new WebShopDbContext(options);
 
-        var customers = context.Customers;
+        var customers = context.Customers.OrderByDescending(c => c.Name);
 
         foreach(var customer in customers)
         {

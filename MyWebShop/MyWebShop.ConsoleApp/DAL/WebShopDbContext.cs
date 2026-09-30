@@ -16,4 +16,15 @@ public class WebShopDbContext : DbContext
     public WebShopDbContext(DbContextOptions<WebShopDbContext> options) : base(options)
     {
     }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);      // 🥸 keep me here
+
+        builder.Entity<Customer>()
+            .Property(c => c.Name)
+            .HasMaxLength(50)
+            .IsRequired();
+
+    }
 }
