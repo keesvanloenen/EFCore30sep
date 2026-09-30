@@ -11,24 +11,33 @@ internal class Program
         var options = new DbContextOptionsBuilder<WebShopDbContext>()
             .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=MyWebShop;ConnectRetryCount=0")
             .Options;
-                
-        using var context = new WebShopDbContext(options);
-        context.Database.EnsureDeleted();       // quick prototyping
-        context.Database.EnsureCreated();       // quick prototyping
 
+        InitalizeDb(options);
+        DataSeed(options);
+        ShowCustomers(options);
+    }
+
+    private static void DataSeed(DbContextOptions<WebShopDbContext> options)
+    {
         var customer1 = new Customer { Name = "Ab" };
         var customer2 = new Customer { Name = "Bo" };
         var customer3 = new Customer { Name = "Cas" };
 
+        using var context = new WebShopDbContext(options);
         context.Customers.AddRange([customer1, customer2, customer3]);
         context.SaveChanges();
-
-        ShowCustomers();
     }
 
-    private static void ShowCustomers()
+    private static void InitalizeDb(DbContextOptions<WebShopDbContext> options)
     {
-        using var context = new WebShopDbContext();
+        using var context = new WebShopDbContext(options);
+        context.Database.EnsureDeleted();       // quick prototyping
+        context.Database.EnsureCreated();       // quick prototyping
+    }
+
+    private static void ShowCustomers(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
 
         var customers = context.Customers;
 
