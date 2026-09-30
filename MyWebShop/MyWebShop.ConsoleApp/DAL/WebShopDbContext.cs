@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MyWebShop.ConsoleApp.DAL.Configuration;
 using MyWebShop.ConsoleApp.Models;
 
 namespace MyWebShop.ConsoleApp.DAL;
@@ -21,10 +22,6 @@ public class WebShopDbContext : DbContext
     {
         base.OnModelCreating(builder);      // 🥸 keep me here
 
-        builder.Entity<Customer>()
-            .Property(c => c.Name)
-            .HasMaxLength(50)
-            .IsRequired();
-
+        builder.ApplyConfiguration(new CustomerConfiguration());
     }
 }
