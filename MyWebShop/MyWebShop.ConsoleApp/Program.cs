@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using MyWebShop.ConsoleApp.DAL;
 using MyWebShop.ConsoleApp.Models;
+using System.Text;
 
 namespace MyWebShop.ConsoleApp;
 
@@ -9,6 +10,8 @@ internal class Program
 {
     static void Main(string[] args)
     {
+        Console.OutputEncoding = Encoding.UTF8;
+
         var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
         var config = builder.Build();
 
@@ -20,7 +23,42 @@ internal class Program
         DataSeed(options);
         //ShowCustomers(options);
         //ShowProducts(options);
-        ShowOrders(options);
+        //ShowOrders(options);
+        ShowCategories(options);
+    }
+
+    private static void ShowCategories(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        var products = context.Products
+            .Include(p => p.Categories);
+
+        foreach (var product in products)
+        {
+            Console.WriteLine($"Product: {product.Name}");
+
+            foreach (var category in product.Categories)
+            {
+                Console.WriteLine($"\t- {category.Name}");
+            }
+        }
+
+        Console.WriteLine("--------------------------HI-----------------------------");
+
+        var categories = context.Categories
+            .Include(c => c.Products);
+
+        foreach (var category in categories)
+        {
+            Console.WriteLine($"Category: {category.Name}");
+
+            foreach (var product in category.Products)
+            {
+                Console.WriteLine($"\t- {product.Name}");
+            }
+        }
+
     }
 
     private static void ShowOrders(DbContextOptions<WebShopDbContext> options)
@@ -77,6 +115,21 @@ internal class Program
         var digitalProduct2 = new DigitalProduct { Name = "LINQ Course", Price = 49.99m, FileSizeInMb = 1200 };
 
         context.Products.AddRange([physicalProduct1, physicalProduct2, digitalProduct1, digitalProduct2]);
+        context.SaveChanges();
+
+        // Many-to-many: automatic (no explicit join table)
+        var electronics = new Category { Name = "Electronics" };
+        var software = new Category { Name = "Software" };
+        var accessories = new Category { Name = "Accessories" };
+
+        // Add products to categories via navigation properties
+        electronics.Products.Add(physicalProduct1);   // Laptop
+        electronics.Products.Add(physicalProduct2);   // Mouse
+        accessories.Products.Add(physicalProduct2);   // Mouse (in both categories)
+        software.Products.Add(digitalProduct1);       // C# for Dummies
+        software.Products.Add(digitalProduct2);       // LINQ Course
+
+        context.Categories.AddRange([electronics, software, accessories]);
         context.SaveChanges();
     }
 
