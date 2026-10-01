@@ -24,7 +24,56 @@ internal class Program
         //ShowCustomers(options);
         //ShowProducts(options);
         //ShowOrders(options);
-        ShowCategories(options);
+        //ShowCategories(options);
+        //ShowCustomer(options);
+
+        SeverSideClientSide(options);
+    }
+
+    private static void SeverSideClientSide(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        var customers = context.Customers
+            .AsNoTracking()                 // don't store in the change tracker
+            .Where(c => c.Name.Length >= 3)
+            .Select(c => new { c.Id, NameInUpper = c.Name.ToUpper() })
+            .ToList()                       // move to memory, so we can do things the db can't 
+            .Where(c => IsVowelName(c.NameInUpper)); // 👈 added
+
+        //Console.WriteLine(customers.ToQueryString());
+
+
+        foreach (var customer in customers)
+        {
+            Console.WriteLine($"{customer.Id} {customer.NameInUpper}");
+        }
+
+
+
+    }
+
+    private static bool IsVowelName(string name) =>
+        char.ToLower(name[0]) is 'a' or 'e' or 'i' or 'u' or 'ü';
+        
+
+    private static void ShowCustomer(DbContextOptions<WebShopDbContext> options)
+    {
+        // FirstOrDefault()
+        // First()
+        // SingleOrDefault()
+        // Single()
+        // Find() // 🍾
+
+        using var context = new WebShopDbContext(options);
+
+        Customer? customer1 = context.Customers.SingleOrDefault(c => c.Name.Contains("el"));
+        Console.WriteLine($"Found: {(customer1?.Name ?? "nothing")}");
+
+        Customer? customer2 = context.Customers.FirstOrDefault(c => c.Id == 3);
+        Customer? customer3 = context.Customers.Find(3);
+
+        Console.WriteLine(customer2?.Name + ", " + customer3?.Name);
     }
 
     private static void ShowCategories(DbContextOptions<WebShopDbContext> options)
@@ -32,7 +81,7 @@ internal class Program
         using var context = new WebShopDbContext(options);
 
         var productCategories = context.ProductCategories
-            .Include(pc => pc.Product)
+            .Include(pc => pc.Product)      // 😀 later more...
             .Include(pc => pc.Category);
 
         foreach (var pc in productCategories)
@@ -80,13 +129,17 @@ internal class Program
         var customer1 = new Customer { Name = "Ab" };
         var customer2 = new Customer { Name = "Bo" };
         var customer3 = new Customer { Name = "Cas" };
+        var customer4 = new Customer { Name = "Nico" };
+        var customer5 = new Customer { Name = "Nele" };
+        var customer6 = new Customer { Name = "Eva" };
+        
 
         customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-4), TotalAmount = 450.00m });
         customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-7), TotalAmount = 190.00m });
         customer2.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-1), TotalAmount = 27.50m });
 
         using var context = new WebShopDbContext(options);
-        context.Customers.AddRange([customer1, customer2, customer3]);
+        context.Customers.AddRange([customer1, customer2, customer3, customer4, customer5, customer6]);
         context.SaveChanges();
 
         var physicalProduct1 = new PhysicalProduct { Name = "Laptop", Price = 999.99m, Weight = 1.5m };
@@ -120,11 +173,22 @@ internal class Program
     {
         using var context = new WebShopDbContext(options);
 
-        var customers = context.Customers.OrderByDescending(c => c.Name);
+        IQueryable<Customer> customers = context.Customers
+            .Where(c => c.Name.Contains('e'))
+            .OrderByDescending(c => c.Name);
+
+        Console.WriteLine(customers.ToQueryString());
 
         foreach(var customer in customers)
         {
             Console.WriteLine($"{customer.Id} {customer.Name}");
         }
+
+        customers = customers.Where(c => c.Name.StartsWith("Ne"));
+        
+        Console.WriteLine(customers.ToQueryString());
+
+        Console.WriteLine(customers.First().Name);
+
     }
 }
