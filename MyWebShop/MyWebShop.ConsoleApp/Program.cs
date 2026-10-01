@@ -18,13 +18,43 @@ internal class Program
 
         InitalizeDb(options);
         DataSeed(options);
-        ShowCustomers(options);
+        //ShowCustomers(options);
+        //ShowProducts(options);
+        ShowOrders(options);
     }
-    private static void InitalizeDb(DbContextOptions<WebShopDbContext> options)
+
+    private static void ShowOrders(DbContextOptions<WebShopDbContext> options)
     {
         using var context = new WebShopDbContext(options);
-        context.Database.EnsureDeleted();       // quick prototyping
-        context.Database.EnsureCreated();       // quick prototyping
+
+        var orders = context.Orders
+            .Include(o => o.Customer);      // 😀 later more...
+        
+        foreach (var order in orders)
+        {
+            Console.WriteLine($"[{order.Id}] {order.OrderDate} {order.TotalAmount:c} - Customer: {order.Customer.Name} and the FK is: {order.CustomerId}");
+        }
+    }
+
+    private static void ShowProducts(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        var products = context.Products.Where(p => p.Price > 1);
+
+        foreach (var product in products)
+        {
+            Console.WriteLine($"{product.Id} {product.Name} {product.Price:c}");
+        }
+    }
+
+    private static void InitalizeDb(DbContextOptions<WebShopDbContext> options)
+    {
+        using (var context = new WebShopDbContext(options))
+        {
+            context.Database.EnsureDeleted();       // quick prototyping
+            context.Database.EnsureCreated();       // quick prototyping
+        }
     }
 
     private static void DataSeed(DbContextOptions<WebShopDbContext> options)
@@ -33,8 +63,20 @@ internal class Program
         var customer2 = new Customer { Name = "Bo" };
         var customer3 = new Customer { Name = "Cas" };
 
+        customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-4), TotalAmount = 450.00m });
+        customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-7), TotalAmount = 190.00m });
+        customer2.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-1), TotalAmount = 27.50m });
+
         using var context = new WebShopDbContext(options);
         context.Customers.AddRange([customer1, customer2, customer3]);
+        context.SaveChanges();
+
+        var physicalProduct1 = new PhysicalProduct { Name = "Laptop", Price = 999.99m, Weight = 1.5m };
+        var physicalProduct2 = new PhysicalProduct { Name = "Mouse", Price = 19.99m, Weight = 0.1m };
+        var digitalProduct1 = new DigitalProduct { Name = "C# for Dummies", Price = 9.99m, FileSizeInMb = 5 };
+        var digitalProduct2 = new DigitalProduct { Name = "LINQ Course", Price = 49.99m, FileSizeInMb = 1200 };
+
+        context.Products.AddRange([physicalProduct1, physicalProduct2, digitalProduct1, digitalProduct2]);
         context.SaveChanges();
     }
 

@@ -25,4 +25,7 @@ public class Customer
 
     [Column(TypeName = "decimal(5,2)")]
     public decimal CreditLimit { get; set; }
+
+    // Navigation Property
+    public List<Order> Orders { get; set; } = [];
 }
