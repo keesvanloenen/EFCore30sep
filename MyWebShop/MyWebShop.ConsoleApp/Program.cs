@@ -31,34 +31,14 @@ internal class Program
     {
         using var context = new WebShopDbContext(options);
 
-        var products = context.Products
-            .Include(p => p.Categories);
+        var productCategories = context.ProductCategories
+            .Include(pc => pc.Product)
+            .Include(pc => pc.Category);
 
-        foreach (var product in products)
+        foreach (var pc in productCategories)
         {
-            Console.WriteLine($"Product: {product.Name}");
-
-            foreach (var category in product.Categories)
-            {
-                Console.WriteLine($"\t- {category.Name}");
-            }
+            Console.WriteLine($"{pc.Category.Name} - {pc.Product.Name} ({pc.AddedOn})");
         }
-
-        Console.WriteLine("--------------------------HI-----------------------------");
-
-        var categories = context.Categories
-            .Include(c => c.Products);
-
-        foreach (var category in categories)
-        {
-            Console.WriteLine($"Category: {category.Name}");
-
-            foreach (var product in category.Products)
-            {
-                Console.WriteLine($"\t- {product.Name}");
-            }
-        }
-
     }
 
     private static void ShowOrders(DbContextOptions<WebShopDbContext> options)
@@ -122,14 +102,16 @@ internal class Program
         var software = new Category { Name = "Software" };
         var accessories = new Category { Name = "Accessories" };
 
-        // Add products to categories via navigation properties
-        electronics.Products.Add(physicalProduct1);   // Laptop
-        electronics.Products.Add(physicalProduct2);   // Mouse
-        accessories.Products.Add(physicalProduct2);   // Mouse (in both categories)
-        software.Products.Add(digitalProduct1);       // C# for Dummies
-        software.Products.Add(digitalProduct2);       // LINQ Course
-
         context.Categories.AddRange([electronics, software, accessories]);
+
+        context.ProductCategories.AddRange([
+            new ProductCategory { Product = physicalProduct1, Category = electronics, AddedOn = DateTime.Now.AddDays(-10) },
+            new ProductCategory { Product = physicalProduct2, Category = electronics, AddedOn = DateTime.Now.AddDays(-1) },
+            new ProductCategory { Product = physicalProduct2, Category = accessories, AddedOn = DateTime.Now.AddDays(-22) },
+            new ProductCategory { Product = digitalProduct1, Category = software, AddedOn = DateTime.Now.AddDays(-7) },
+            new ProductCategory { Product = digitalProduct2, Category = software, AddedOn = DateTime.Now.AddDays(-5) },
+        ]);
+
         context.SaveChanges();
     }
 

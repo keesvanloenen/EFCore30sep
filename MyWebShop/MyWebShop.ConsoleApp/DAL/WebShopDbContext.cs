@@ -12,7 +12,7 @@ public class WebShopDbContext : DbContext
     public DbSet<DigitalProduct> DigitalProducts { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<Category> Categories { get; set; }
-
+    public DbSet<ProductCategory> ProductCategories { get; set; }
 
     //protected override void OnConfiguring(DbContextOptionsBuilder builder)
     //{
@@ -32,6 +32,7 @@ public class WebShopDbContext : DbContext
         builder.ApplyConfiguration(new CustomerConfiguration());
         builder.ApplyConfiguration(new OrderConfiguration());
         builder.ApplyConfiguration(new CategoryConfiguration());
+        builder.ApplyConfiguration(new ProductCategoryConfiguration());
 
         // If we don't want Tph (table per hierarchy), use Tpt or Tpc:
         // builder.Entity<Product>()
