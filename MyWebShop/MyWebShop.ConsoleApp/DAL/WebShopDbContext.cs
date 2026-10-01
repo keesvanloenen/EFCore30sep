@@ -29,21 +29,11 @@ public class WebShopDbContext : DbContext
         base.OnModelCreating(builder);      // 🥸 keep me here
 
         builder.ApplyConfiguration(new CustomerConfiguration());
+        builder.ApplyConfiguration(new OrderConfiguration());
 
         //builder.Entity<Product>()
         //    .UseTpcMappingStrategy();
 
-        builder.Entity<Order>()
-            .HasKey(o => o.Id);
 
-        builder.Entity<Order>()
-            .Property(o => o.TotalAmount)
-            //.HasColumnType("decimal(7,2)")
-            .HasPrecision(7, 2);
-
-        builder.Entity<Order>().HasOne(o => o.Customer)
-            .WithMany(c => c.Orders)
-            .HasForeignKey("CustomerId")        // still  a shadow property!
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }
