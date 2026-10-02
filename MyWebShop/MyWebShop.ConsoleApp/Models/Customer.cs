@@ -25,6 +25,8 @@ public class Customer
     [Column(TypeName = "decimal(5,2)")]
     public decimal CreditLimit { get; set; }
 
+    public byte[] RowVersion { get; set; } = null!;    // 👈
+
     // Navigation Property
     public List<Order> Orders { get; set; } = [];
 }

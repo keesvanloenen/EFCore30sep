@@ -17,6 +17,7 @@ internal class Program
 
         var options = new DbContextOptionsBuilder<WebShopDbContext>()
             .UseSqlServer(config.GetConnectionString("DefaultConn"))
+            //.LogTo(Console.WriteLine)
             .Options;
 
         InitalizeDb(options);
@@ -26,10 +27,116 @@ internal class Program
         //ShowOrders(options);
         //ShowCategories(options);
         //ShowCustomer(options);
-
         //SeverSideClientSide(options);
+        //ExplicitLoading(options);
+        //Crud(options);
+        //BulkOperations(options);
+        Concurrency(options);
 
-        ExplicitLoading(options);
+    }
+
+    private static void Concurrency(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        // User A
+        var customer = context.Customers.Find(1)!;
+        Console.WriteLine($"User A loads: Credit = {customer.CreditLimit}");
+
+        // User B
+        context.Customers
+            .Where(c => c.Id == 1)
+            .ExecuteUpdate(setters => setters.SetProperty(c => c.CreditLimit, 2000m));
+        Console.WriteLine("User B saved: Credit = 2000");
+
+        // User A
+        customer.CreditLimit = 1500m;
+
+        try
+        {
+            context.SaveChanges();      // UPDATE Customers SET Creditlimit = 1500 WHERE Id = 1 AND RowVersion = 0x00000007D7
+        }
+        catch(DbUpdateConcurrencyException ex) 
+        {
+            Console.WriteLine("CONFLICT!");
+
+            foreach(var entry in ex.Entries)
+            {
+                if (entry.Entity is Customer conflictedCustomer)
+                {
+                    //Console.WriteLine(conflictedCustomer.CreditLimit);
+
+                    // Get database values
+                    var dbValues = entry.GetDatabaseValues()!;
+
+                    // DB WINS
+                    //entry.CurrentValues.SetValues(dbValues);
+                    //Console.WriteLine("Changes discarded!");
+
+                    // CLIENT WINS
+                    entry.OriginalValues.SetValues(dbValues);
+                    context.SaveChanges();
+                    Console.WriteLine("Client wins: 1500 EUR saved");       // User A wins
+                }
+            }
+        }
+    }
+
+    private static void BulkOperations(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        var countDeleted = context.Customers
+            .Include(c => c.Orders)
+            .Where(c => c.Orders.Count() == 0)
+            .ExecuteDelete();
+
+        Console.WriteLine($"# Customers deleted: {countDeleted}");
+
+    }
+
+    private static void Crud(DbContextOptions<WebShopDbContext> options)
+    {
+        var newCustomerId = 0;
+
+        using (var context = new WebShopDbContext(options))
+        {
+            var newCustomer = new Customer
+            {
+                Name = "Hanz",
+                PhoneNumber = "1234567890",
+                CreditLimit = 1000.00m,
+            };
+
+            context.Customers.Add(newCustomer);
+            context.SaveChanges();
+            newCustomerId = newCustomer.Id;
+            Console.WriteLine($"Generated id = {newCustomerId}");
+        }
+
+        using (var context = new WebShopDbContext(options))
+        {
+            Customer? customer = context.Customers.Find(newCustomerId);
+            if (customer is null)
+            {
+                return;
+            }
+            customer.Name = "Hans";
+            context.SaveChanges();
+        }
+
+
+        using (var context = new WebShopDbContext(options))
+        {
+            Customer? customer = context.Customers.Find(newCustomerId);
+
+            if (customer is null)
+            {
+                return;
+            }
+
+            Console.WriteLine(customer.Name);
+        }
     }
 
     private static void ExplicitLoading(DbContextOptions<WebShopDbContext> options)
@@ -129,8 +236,25 @@ internal class Program
         using var context = new WebShopDbContext(options);
 
         var orders = context.Orders
-            .Include(o => o.Customer);      // 😀 later more...
-        
+            .Include(o => o.Customer);
+
+        Console.WriteLine(orders.ToQueryString());
+
+        var orders2 = context.Orders
+            .Include(o => o.Customer)
+            .Select(o => new { o.OrderDate, CustomerName = o.Customer.Name });
+
+        Console.WriteLine();
+
+        Console.WriteLine(orders2.ToQueryString());
+
+        var orders3 = context.Orders
+            .Select(o => new { o.OrderDate, CustomerName = o.Customer.Name });
+
+        Console.WriteLine();
+
+        Console.WriteLine(orders3.ToQueryString());
+
         foreach (var order in orders)
         {
             Console.WriteLine($"[{order.Id}] {order.OrderDate} {order.TotalAmount:c} - Customer: {order.Customer.Name} and the FK is: {order.CustomerId}");

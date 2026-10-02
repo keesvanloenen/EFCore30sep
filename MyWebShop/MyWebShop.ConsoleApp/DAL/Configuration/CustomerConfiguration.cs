@@ -21,5 +21,9 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.CreditLimit)
             .HasColumnType("decimal(18,2)")
             .HasPrecision(18, 2);
+
+        // Concurrency token (SQL Server rowversion)
+        builder.Property(c => c.RowVersion)
+            .IsRowVersion();
     }
 }
