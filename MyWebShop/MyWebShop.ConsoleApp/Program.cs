@@ -27,7 +27,38 @@ internal class Program
         //ShowCategories(options);
         //ShowCustomer(options);
 
-        SeverSideClientSide(options);
+        //SeverSideClientSide(options);
+
+        ExplicitLoading(options);
+    }
+
+    private static void ExplicitLoading(DbContextOptions<WebShopDbContext> options)
+    {
+        Console.Write("Enter the customer id: ");
+        string input = Console.ReadLine() ?? string.Empty;
+
+        int customerId = int.Parse(input);
+
+        using var context = new WebShopDbContext(options);
+
+        Customer? customer = context.Customers.Find(customerId);
+
+        if (customer is null)
+        {
+            Console.WriteLine($"Customer with Id {customerId} not found");
+            return;
+        }
+
+        context.Entry(customer)
+            .Collection(c => c.Orders)
+            .Load();
+
+        foreach(var order in customer.Orders)
+        {
+            Console.WriteLine($"\t[{order.Id}] - {order.OrderDate:dd.MM.yyyy} {order.TotalAmount:C}");
+        }
+
+
     }
 
     private static void SeverSideClientSide(DbContextOptions<WebShopDbContext> options)
@@ -48,9 +79,6 @@ internal class Program
         {
             Console.WriteLine($"{customer.Id} {customer.NameInUpper}");
         }
-
-
-
     }
 
     private static bool IsVowelName(string name) =>
@@ -83,6 +111,12 @@ internal class Program
         var productCategories = context.ProductCategories
             .Include(pc => pc.Product)      // 😀 later more...
             .Include(pc => pc.Category);
+
+        //var productCategories = context.Products
+        //    .Include(p => p.ProductCategories)      // 😀 later more...
+        //    .ThenInclude(pc => pc.Category);
+
+        Console.WriteLine(productCategories.ToQueryString());
 
         foreach (var pc in productCategories)
         {
