@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CustomerService.Tests/CustomerService.Tests.csproj" />
+  <Project Path="CustomerService/CustomerService.csproj" />
+</Solution>

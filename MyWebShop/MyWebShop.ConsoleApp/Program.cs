@@ -31,8 +31,77 @@ internal class Program
         //ExplicitLoading(options);
         //Crud(options);
         //BulkOperations(options);
-        Concurrency(options);
+        //Concurrency(options);
+        //DemoExecuteSql(options);
+        //DemoFromSql(options);
+        //DemoFromSql_StoredProcedure(options);
+        DemoFromSqlRaw(options);
 
+    }
+
+    private static void DemoFromSqlRaw(DbContextOptions<WebShopDbContext> options)
+    {
+        var columnName = "CreditLimit = 0 OR 1=1 --";
+        var columnValue = 1600m;   // user input
+
+        using var context = new WebShopDbContext(options);
+
+        var filteredCustomers = context.Customers
+            .FromSqlRaw($"SELECT * FROM Customers WHERE {columnName} = {columnValue}");
+
+        Console.WriteLine(filteredCustomers.ToQueryString());
+
+        foreach (var customer in filteredCustomers)
+        {
+            Console.WriteLine($"{customer.Name}: {customer.CreditLimit}");
+        }
+    }
+
+    private static void DemoFromSql_StoredProcedure(DbContextOptions<WebShopDbContext> options)
+    {
+        var id = 2;
+        using var context = new WebShopDbContext(options);
+
+        var lastOrder = context.Orders
+            .FromSql($"EXECUTE dbo.ShowLastOrderForCustomer {id}")
+            .AsEnumerable()
+            .FirstOrDefault();
+
+        if (lastOrder is not null)
+        {
+            Console.WriteLine($"Last order for customer {id}: {lastOrder.OrderDate} {lastOrder.TotalAmount}");
+        }
+
+
+    }
+
+    private static void DemoFromSql(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+        var filter = "%o";
+
+        var customers = context.Customers.FromSql($"SELECT * FROM Customers WHERE Name LIKE {filter}");
+
+        Console.WriteLine(customers.ToQueryString());
+
+        Console.WriteLine(string.Join(',', customers.Select(c => c.Name)));
+        
+    }
+
+    private static void DemoExecuteSql(DbContextOptions<WebShopDbContext> options)
+    {
+        using var context = new WebShopDbContext(options);
+
+        context.Database.ExecuteSql(
+            @$" CREATE OR ALTER PROCEDURE dbo.ShowLastOrderForCustomer
+                    @customerId AS int
+                AS
+                BEGIN
+	                SELECT TOP 1 *
+                        FROM Orders AS o
+                        WHERE o.CustomerId = @customerId
+                        ORDER BY o.OrderDate DESC;
+                END;");
     }
 
     private static void Concurrency(DbContextOptions<WebShopDbContext> options)
@@ -284,13 +353,12 @@ internal class Program
 
     private static void DataSeed(DbContextOptions<WebShopDbContext> options)
     {
-        var customer1 = new Customer { Name = "Ab" };
-        var customer2 = new Customer { Name = "Bo" };
-        var customer3 = new Customer { Name = "Cas" };
-        var customer4 = new Customer { Name = "Nico" };
-        var customer5 = new Customer { Name = "Nele" };
-        var customer6 = new Customer { Name = "Eva" };
-        
+        var customer1 = new Customer { Name = "Ab", PhoneNumber = "0611111111", CreditLimit = 2000.00m };
+        var customer2 = new Customer { Name = "Bo", PhoneNumber = "0622222222", CreditLimit = 2000.00m };
+        var customer3 = new Customer { Name = "Cas", PhoneNumber = "0633333333", CreditLimit = 1800.00m };
+        var customer4 = new Customer { Name = "Nico", PhoneNumber = "0644444444", CreditLimit = 1800.00m };
+        var customer5 = new Customer { Name = "Nele", PhoneNumber = "0655555555", CreditLimit = 1600.00m };
+        var customer6 = new Customer { Name = "Eva", PhoneNumber = "0666666666", CreditLimit = 1600.00m };
 
         customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-4), TotalAmount = 450.00m });
         customer1.Orders.Add(new Order { OrderDate = DateTime.Now.AddDays(-7), TotalAmount = 190.00m });
@@ -324,6 +392,17 @@ internal class Program
         ]);
 
         context.SaveChanges();
+
+        context.Database.ExecuteSql(
+            @$" CREATE OR ALTER PROCEDURE dbo.ShowLastOrderForCustomer
+                    @customerId AS int
+                AS
+                BEGIN
+	                SELECT TOP 1 *
+                        FROM Orders AS o
+                        WHERE o.CustomerId = @customerId
+                        ORDER BY o.OrderDate DESC;
+                END;");
     }
 
 

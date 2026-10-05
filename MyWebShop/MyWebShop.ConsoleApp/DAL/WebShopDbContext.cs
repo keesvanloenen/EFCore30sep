@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MyWebShop.ConsoleApp.DAL.Configuration;
 using MyWebShop.ConsoleApp.Models;
 
@@ -14,14 +15,21 @@ public class WebShopDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
 
-    //protected override void OnConfiguring(DbContextOptionsBuilder builder)
-    //{
-    //    builder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=MyWebShop;ConnectRetryCount=0");
-    //}
+    protected override void OnConfiguring(DbContextOptionsBuilder builder)
+    {
+        if (!builder.IsConfigured)
+        {
+            builder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=MyWebShop;ConnectRetryCount=0");
+        }
+    }
 
 
     // Inject the context options in the constructor              👇
     public WebShopDbContext(DbContextOptions<WebShopDbContext> options) : base(options)
+    {
+    }
+
+    public WebShopDbContext()    // 👈 Add parameterless constructor for migrations
     {
     }
 
